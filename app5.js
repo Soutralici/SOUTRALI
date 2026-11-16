@@ -3,6 +3,9 @@ function cur(){var t=document.documentElement.getAttribute("data-theme");if(t)re
 function svg(p){return'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>'}
 var SUN=svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>');
 var MOON=svg('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>');
+var IJ=svg('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>');
+var IM=svg('<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>');
+var IC=svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>');
 K.themeIcon=function(){var b=K.$("#th");if(!b)return;var d=cur()==="dark";b.innerHTML=d?SUN:MOON;b.setAttribute("aria-label",d?"Passer au mode clair":"Passer au mode sombre")};
 K.acts.theme=function(){var n=cur()==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",n);try{localStorage.setItem("sou_theme",n)}catch(e){}K.themeIcon()};
 K.themeIcon();
@@ -10,14 +13,18 @@ function count(){var rm=window.matchMedia&&matchMedia("(prefers-reduced-motion: 
 document.querySelectorAll(".tile b[data-n]").forEach(function(e){var n=+e.dataset.n,t0=null;if(rm||n<2)return;
 function f(ts){if(!t0)t0=ts;var p=Math.min((ts-t0)/800,1);e.textContent=Math.round(n*(1-Math.pow(1-p,3))).toLocaleString("fr-FR");if(p<1)requestAnimationFrame(f)}
 requestAnimationFrame(f)})}
+function tile(i,n,l,m){return'<div class="tile'+(m?' main':'')+'"><span class="ti">'+i+'</span><b data-n="'+n+'">'+n.toLocaleString("fr-FR")+'</b><span>'+l+'</span></div>'}
 function dash(){
-var u=K.S.user,name=(K.S.me&&K.S.me.name)||"";
+var u=K.S.user,name=(K.S.me&&K.S.me.name)||"",h=new Date().getHours(),g=h<12?"Bonjour":(h<18?"Bon après-midi":"Bonsoir");
 var p1=K.sb.from("missions").select("price").eq("status","ouverte").limit(1000).then(function(r){var l=r.data||[];return{n:l.length,s:l.reduce(function(a,m){return a+m.price},0)}});
 var p2=u?K.sb.from("missions").select("id",{count:"exact",head:true}).in("status",["ouverte","prise"]).or("owner.eq."+u.id+",taker.eq."+u.id).then(function(r){return r.count||0}):Promise.resolve(0);
 return Promise.all([p1,p2]).then(function(a){
-var t='<div class="tiles"><div class="tile"><b data-n="'+a[0].n+'">'+a[0].n+'</b><span>missions ouvertes</span></div><div class="tile"><b data-n="'+a[0].s+'">'+a[0].s.toLocaleString("fr-FR")+'</b><span>FCFA à gagner</span></div>'+(u?'<div class="tile"><b data-n="'+a[1]+'">'+a[1]+'</b><span>mes missions en cours</span></div>':'')+'</div>';
-if(u)return'<section class="dash" aria-label="Tableau de bord"><p class="dh">Bonjour, '+K.esc(name||"toi")+'</p>'+t+'<div class="qa"><button class="btn" data-go="new">Publier une mission</button><button class="btn alt" data-go="mine">Mes missions</button></div></section>';
-return'<section class="dash" aria-label="Bienvenue"><p class="dh">Bienvenue sur Soutrali</p><p class="ds">Trouve un petit boulot ou fais faire une tâche près de chez toi.</p>'+t+'<div class="qa"><button class="btn" data-act="gosignup">Créer mon compte</button><button class="btn alt" data-go="how">Comment ça marche</button></div></section>'})}
+var n=a[0].n,s=a[0].s,c=a[1],t="";
+if(n>0)t=tile(IJ,n,"missions ouvertes",1)+tile(IM,s,"FCFA proposés")+(u?tile(IC,c,"mes missions en cours"):"");
+else if(u&&c>0)t=tile(IC,c,"mes missions en cours",1);
+var tiles=t?'<div class="tiles">'+t+'</div>':'<div class="dempty"><b>Aucune mission ouverte pour le moment</b><span>'+(u?"Publie la première : un jeune de ton quartier pourra la prendre.":"Crée un compte pour publier la première mission.")+'</span></div>';
+if(u)return'<section class="dash" aria-label="Tableau de bord"><p class="dh">'+g+', '+K.esc(name||"toi")+'</p>'+tiles+'<div class="qa"><button class="btn" data-go="new">'+(n>0?"Publier une mission":"Publier la première mission")+'</button><button class="btn alt" data-go="mine">Mes missions</button></div></section>';
+return'<section class="dash" aria-label="Bienvenue"><p class="dh">Bienvenue sur Soutrali</p><p class="ds">Trouve un petit boulot ou fais faire une tâche près de chez toi.</p>'+tiles+'<div class="qa"><button class="btn" data-act="gosignup">Créer mon compte</button><button class="btn alt" data-go="how">Comment ça marche</button></div></section>'})}
 var oh=K.views.home;
 K.views.home=function(){return Promise.resolve(oh()).then(dash).then(function(h){var a=K.$("#app");if(!a||K.S.view!=="home")return;a.insertAdjacentHTML("afterbegin",h);count()})};
 K.acts.gosignup=function(){K.S.mode="signup";K.go("auth")};
